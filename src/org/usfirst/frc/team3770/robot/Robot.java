@@ -4,6 +4,9 @@
 package org.usfirst.frc.team3770.robot;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.PIDController;
+import edu.wpi.first.wpilibj.Relay;
+import edu.wpi.first.wpilibj.Relay.Direction;
+import edu.wpi.first.wpilibj.Relay.Value;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.Talon;
 
@@ -28,6 +31,8 @@ public class Robot extends IterativeRobot
     private final int CYLINDER_IN_PORT = 1;
     private final int CYLINDER_OUT_PORT = 0;
     
+    final int VISION_LED_RELAY_PORT = 0;
+    
     // Declare objects
     Talon leftMotor, rightMotor, auxMotor;
     
@@ -45,6 +50,9 @@ public class Robot extends IterativeRobot
     
     // Add Pneumatic Cylinder
     ActuatorDouble cylinder;
+    
+    // Led relay for vision
+    Relay visionLedRelay;
     
     /*
     PIDController approachControl;
@@ -80,6 +88,8 @@ public class Robot extends IterativeRobot
         
         cylinder = new ActuatorDouble(CYLINDER_IN_PORT, CYLINDER_OUT_PORT, ActuatorStatus.IN);
         
+        
+        visionLedRelay = new Relay(VISION_LED_RELAY_PORT, Direction.kForward);
         /*
         driveOutput = new DrivePIDoutput(leftMotor,rightMotor);
         pidSenseInput = new SonarPIDinput(pot);
@@ -113,11 +123,17 @@ public class Robot extends IterativeRobot
     			cylinder.goIn();
     		}
     	}
+    	else if(leftStick.getRawButton(11)) {
+    		visionLedRelay.set(Value.kOn);
+    	}
+    	else if(leftStick.getRawButton(12)) {
+    		visionLedRelay.set(Value.kOff);
+    	}
     	
         // Get joy stick values (-1 ... 0 ... 1)
         left  = leftStick.getY();
         right = rightStick.getY();
-        aux = (rightStick.getThrottle()+1)/2;
+        aux = (pot.getVoltage()/5);
         
         
         // Set drive motors to current joy stick values
@@ -125,7 +141,7 @@ public class Robot extends IterativeRobot
         rightMotor.set(right);
         auxMotor.set(aux);
         
-        //debug.print(0, "Pot: " + pidSenseInput.pidGet());
+        debug.print(0, "Pot: " + pot.getVoltage());
         //debug.print(1, "PID: " + approachControl.get());
         
     }
