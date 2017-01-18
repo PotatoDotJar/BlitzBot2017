@@ -109,6 +109,28 @@ public class Robot extends IterativeRobot
     //-------------------------------------------------
     public void teleopPeriodic() 
     {
+    	
+    	updateControls();
+    	
+        // Set drive motors to current joy stick values
+        leftMotor.set(left);
+        rightMotor.set(right);
+        auxMotor.set(aux);
+        
+        debug.print(0, "Pot: " + pot.getVoltage());
+        //debug.print(1, "PID: " + approachControl.get());
+        
+    }
+    
+    public void updateControls()
+    {
+    	
+    	// Get joy stick values (-1 ... 0 ... 1)
+        left  = leftStick.getY();
+        right = rightStick.getY();
+        aux = (pot.getVoltage()/5);
+    	
+    	
     	if(leftStick.getRawButton(3)) 
     	{
     		if(cylinder.getStatus() == ActuatorStatus.IN) 
@@ -130,19 +152,6 @@ public class Robot extends IterativeRobot
     		visionLedRelay.set(Value.kOff);
     	}
     	
-        // Get joy stick values (-1 ... 0 ... 1)
-        left  = leftStick.getY();
-        right = rightStick.getY();
-        aux = (pot.getVoltage()/5);
-        
-        
-        // Set drive motors to current joy stick values
-        leftMotor.set(left);
-        rightMotor.set(right);
-        auxMotor.set(aux);
-        
-        debug.print(0, "Pot: " + pot.getVoltage());
-        //debug.print(1, "PID: " + approachControl.get());
-        
+    	
     }
 }
