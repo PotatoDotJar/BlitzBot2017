@@ -9,10 +9,14 @@ import edu.wpi.first.wpilibj.Relay.Direction;
 import edu.wpi.first.wpilibj.Relay.Value;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.Talon;
+import edu.wpi.first.wpilibj.TalonSRX;
 
 import org.usfirst.frc.team3770.robot.ActuatorDouble.ActuatorStatus;
 
+import com.ctre.CANTalon;
+
 import edu.wpi.first.wpilibj.AnalogInput;
+import edu.wpi.first.wpilibj.CANSpeedController;
 import edu.wpi.first.wpilibj.Compressor;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
@@ -22,9 +26,9 @@ public class Robot extends IterativeRobot
     private final int LEFT_STICK_USB_PORT    = 1;
     private final int RIGHT_STICK_USB_PORT   = 0;
     
-    private final int LEFT_MOTOR_PORT    = 0;
-    private final int RIGHT_MOTOR_PORT   = 1;
-    private final int AUX_MOTOR_PORT	 = 2;
+    private final int RIGHT_CAN_MOTOR_ID   = 2;
+    private final int LEFT_CAN_MOTOR_ID    = 3;
+    private final int AUX_CAN_MOTOR_ID	 =   4;
     
     private final int POT_ANALOG_PORT   = 0;
     
@@ -34,7 +38,7 @@ public class Robot extends IterativeRobot
     final int VISION_LED_RELAY_PORT = 0;
     
     // Declare objects
-    Talon leftMotor, rightMotor, auxMotor;
+    CANTalon leftMotor, rightMotor, auxMotor;
     
     Joystick leftStick, rightStick;
     AnalogInput pot;
@@ -65,9 +69,9 @@ public class Robot extends IterativeRobot
     public void robotInit() 
     {
         // Instantiate robot objects by calling constructors
-        leftMotor  = new Talon(LEFT_MOTOR_PORT);      
-        rightMotor = new Talon(RIGHT_MOTOR_PORT);
-        auxMotor = new Talon(AUX_MOTOR_PORT);
+        leftMotor  = new CANTalon(LEFT_CAN_MOTOR_ID);      
+        rightMotor = new CANTalon(RIGHT_CAN_MOTOR_ID);
+        auxMotor = new CANTalon(AUX_CAN_MOTOR_ID);
         
         // Create Debug object
         debug = new Debug();
