@@ -19,6 +19,7 @@ import edu.wpi.first.wpilibj.AnalogInput;
 import edu.wpi.first.wpilibj.CANSpeedController;
 import edu.wpi.first.wpilibj.Compressor;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj.DigitalInput;
 
 public class Robot extends IterativeRobot
 {
@@ -37,11 +38,16 @@ public class Robot extends IterativeRobot
     
     final int VISION_LED_RELAY_PORT = 0;
     
+    final int SWITCH_PORT = 0;
+    
     // Declare objects
     CANTalon leftMotor, rightMotor, auxMotor;
     
     Joystick leftStick, rightStick;
     AnalogInput pot;
+    
+    DigitalInput theSwitch;
+    
     
     // Dubug Utility Class
     Debug debug;
@@ -83,6 +89,7 @@ public class Robot extends IterativeRobot
         leftStick  = new Joystick(LEFT_STICK_USB_PORT);     
         rightStick = new Joystick(RIGHT_STICK_USB_PORT);
         
+        theSwitch = new DigitalInput(SWITCH_PORT);
         
         pot = new AnalogInput(POT_ANALOG_PORT);
         
@@ -119,7 +126,7 @@ public class Robot extends IterativeRobot
         // Set drive motors to current joy stick values
         leftMotor.set(left);
         rightMotor.set(right);
-        auxMotor.set(aux);
+        //auxMotor.set(aux);
         
         debug.print(0, "Pot: " + pot.getVoltage());
         //debug.print(1, "PID: " + approachControl.get());
@@ -155,7 +162,14 @@ public class Robot extends IterativeRobot
     	else if(leftStick.getRawButton(12)) {
     		visionLedRelay.set(Value.kOff);
     	}
-    	
-    	
+    	else if(rightStick.getRawButton(9)) {
+    		auxMotor.set(1.0);
+    	}
+    	else if(rightStick.getRawButton(10)) {
+    		auxMotor.set(0.0);
+    	}
+    	else if(theSwitch.get() == false){
+    		auxMotor.set(0.0);
+    	}
     }
 }
