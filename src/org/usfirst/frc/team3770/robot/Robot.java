@@ -10,6 +10,7 @@ import edu.wpi.first.wpilibj.Relay.Value;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.Talon;
 import edu.wpi.first.wpilibj.TalonSRX;
+import edu.wpi.first.wpilibj.Timer;
 
 import org.usfirst.frc.team3770.robot.ActuatorDouble.ActuatorStatus;
 
@@ -48,12 +49,15 @@ public class Robot extends IterativeRobot
     
     DigitalInput theSwitch;
     
+    Timer clock;
     
     // Dubug Utility Class
     Debug debug;
     
     // Declare utility variables
     double left,right, aux;
+   
+    boolean switchTriggered;
     
     // Add the pneumatics compressor
     Compressor compressor;
@@ -117,6 +121,47 @@ public class Robot extends IterativeRobot
         System.out.println("=============ROBOT INITIALIZED!=============");
     }
     
+    public void autonomousInit()
+    {
+    	clock = new Timer();
+    	clock.reset();
+    	clock.start();
+    	
+    	switchTriggered = false;
+    }
+    
+    public void autonomousPeriodic()
+    { 
+    
+    	if (clock.get() < 5.0)	
+    	{
+    		leftMotor.set(1.0);
+    		rightMotor.set(1.0);
+    	}
+    	else if(clock.get() >= 5.0 && clock.get() < 6.0) 
+    	{
+    		leftMotor.set(0.0);
+    		rightMotor.set(0.0);
+    	}
+    	else if (clock.get() >= 6.0 && clock.get() < 8.0) 
+    	{
+    		leftMotor.set(-0.4);
+    		rightMotor.set(0.25);
+    	}
+    	else if (clock.get() >= 8.0 && switchTriggered == false) 
+    	{
+    		leftMotor.set(-1.0);
+    		rightMotor.set(-1.0);
+    	}
+    	if (clock.get() >= 8.0 && theSwitch.get() == false) 
+    	{
+    		leftMotor.set(0.0);
+    		rightMotor.set(0.0);
+    		switchTriggered = true;
+    	}
+    	
+    }
+    
     //-------------------------------------------------
     public void teleopPeriodic() 
     {
@@ -126,7 +171,7 @@ public class Robot extends IterativeRobot
         // Set drive motors to current joy stick values
         leftMotor.set(left);
         rightMotor.set(right);
-        //auxMotor.set(aux);
+        auxMotor.set(aux);
         
         debug.print(0, "Pot: " + pot.getVoltage());
         //debug.print(1, "PID: " + approachControl.get());
@@ -162,6 +207,8 @@ public class Robot extends IterativeRobot
     	else if(leftStick.getRawButton(12)) {
     		visionLedRelay.set(Value.kOff);
     	}
+    	
+    	/*
     	else if(rightStick.getRawButton(9)) {
     		auxMotor.set(1.0);
     	}
@@ -171,5 +218,6 @@ public class Robot extends IterativeRobot
     	else if(theSwitch.get() == false){
     		auxMotor.set(0.0);
     	}
+    	*/
     }
 }
