@@ -1,9 +1,13 @@
-// Team 3770 Robot
-// PID testing
+// =======================================================================
+// Team 3770 BlitzCreek - 2017 Robot Code
+// Main Driver Module
+// =======================================================================
 
 package org.usfirst.frc.team3770.robot;
+
+import org.usfirst.frc.team3770.robot.ActuatorDouble.ActuatorStatus;
+
 import edu.wpi.first.wpilibj.IterativeRobot;
-import edu.wpi.first.wpilibj.PIDController;
 import edu.wpi.first.wpilibj.Relay;
 import edu.wpi.first.wpilibj.Relay.Direction;
 import edu.wpi.first.wpilibj.Relay.Value;
@@ -11,17 +15,26 @@ import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.Talon;
 import edu.wpi.first.wpilibj.TalonSRX;
 import edu.wpi.first.wpilibj.Timer;
-
-import org.usfirst.frc.team3770.robot.ActuatorDouble.ActuatorStatus;
-
-import com.ctre.CANTalon;
-
 import edu.wpi.first.wpilibj.AnalogInput;
 import edu.wpi.first.wpilibj.CANSpeedController;
+import edu.wpi.first.wpilibj.CameraServer;
 import edu.wpi.first.wpilibj.Compressor;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.DigitalInput;
 
+import com.ctre.CANTalon;
+
+import edu.wpi.cscore.CvSink;
+import edu.wpi.cscore.CvSource;
+import edu.wpi.cscore.UsbCamera;
+import edu.wpi.first.wpilibj.CameraServer;
+import edu.wpi.first.wpilibj.IterativeRobot;
+import org.opencv.core.Mat;
+import org.opencv.core.Point;
+import org.opencv.core.Scalar;
+import org.opencv.imgproc.Imgproc;
+
+// =======================================================================
 public class Robot extends IterativeRobot
 {
     // Declare constant values
@@ -32,52 +45,37 @@ public class Robot extends IterativeRobot
     private final int LEFT_CAN_MOTOR_ID    = 3;
     private final int AUX_CAN_MOTOR_ID	 =   4;
     
-    private final int POT_ANALOG_PORT   = 0;
-    
+    private final int SONAR_ANALOG_PORT   = 3; 
+    final int VISION_LED_RELAY_PORT = 0;
+
     private final int CYLINDER_IN_PORT = 1;
     private final int CYLINDER_OUT_PORT = 0;
     
-    final int VISION_LED_RELAY_PORT = 0;
-    
     final int SWITCH_PORT = 0;
     
-    // Declare objects
-    CANTalon leftMotor, rightMotor, auxMotor;
+    // Declare objects for mechanical units
+    CANTalon leftMotor, rightMotor, auxMotor;   // Motors
+    Joystick leftStick, rightStick;             // Joysticks
+    AnalogInput sonar;                          // Sonar    
+    Relay visionLedRelay;                       // Vision light switch
+ 
+    ActuatorDouble cylinder;                    // Cylinder 1  
+    CameraSystemK cameraManager;                 // Manage cameras - front/back
     
-    Joystick leftStick, rightStick;
-    AnalogInput pot;
+    // Timer object(s)
+    Timer autonClock;
     
-    DigitalInput theSwitch;
-    
-    Timer clock;
-    
-    // Dubug Utility Class
-    Debug debug;
+    Debug debug;                                // Debug Utility Class
     
     // Declare utility variables
     double left,right, aux;
-   
-    boolean switchTriggered;
     
-    // Add the pneumatics compressor
-    Compressor compressor;
-    
-    // Add Pneumatic Cylinder
-    ActuatorDouble cylinder;
-    
-    // Led relay for vision
-    Relay visionLedRelay;
-    
-    /*
-    PIDController approachControl;
-    final double Kp = 0.2;
-    final double Ki = 0.2;
-    final double Kd = 0.2;
-    */
-    
-    //-------------------------------------------------
+    // =======================================================================
     public void robotInit() 
     {
+    	// This statement alone will send one USB camera image to the screen
+     //   CameraServer.getInstance().startAutomaticCapture();
+ 	
         // Instantiate robot objects by calling constructors
         leftMotor  = new CANTalon(LEFT_CAN_MOTOR_ID);      
         rightMotor = new CANTalon(RIGHT_CAN_MOTOR_ID);
@@ -86,107 +84,75 @@ public class Robot extends IterativeRobot
         // Create Debug object
         debug = new Debug();
         
-        // leftMotor.setInverted(true);
-        // leftMotor.setInverted(true);
-        
         // Initialize the Joysticks
         leftStick  = new Joystick(LEFT_STICK_USB_PORT);     
         rightStick = new Joystick(RIGHT_STICK_USB_PORT);
         
-        theSwitch = new DigitalInput(SWITCH_PORT);
-        
-        pot = new AnalogInput(POT_ANALOG_PORT);
-        
-        // Initialize compressor and start it
-        compressor = new Compressor();
-        compressor.start();
-        
-        cylinder = new ActuatorDouble(CYLINDER_IN_PORT, CYLINDER_OUT_PORT, ActuatorStatus.IN);
-        
-        
+        // Initializer various objects
+        sonar = new AnalogInput(SONAR_ANALOG_PORT);
+        cylinder = new ActuatorDouble(CYLINDER_IN_PORT, CYLINDER_OUT_PORT, ActuatorStatus.IN);        
         visionLedRelay = new Relay(VISION_LED_RELAY_PORT, Direction.kForward);
-        /*
-        driveOutput = new DrivePIDoutput(leftMotor,rightMotor);
-        pidSenseInput = new SonarPIDinput(pot);
+        cameraManager =  new CameraSystemK();
         
-        approachControl = new PIDController( Kp,  Ki,  Kd, pidSenseInput, driveOutput);
-        approachControl.setInputRange(0.0, 40.0);
-        approachControl.setOutputRange(0, 1.0);     
         
-        approachControl.enable();
-        */
+       
+
         
         // Clear the dashboard
         debug.clearDashboard();
         System.out.println("=============ROBOT INITIALIZED!=============");
     }
-    
+
+    // =======================================================================    
     public void autonomousInit()
     {
-    	clock = new Timer();
-    	clock.reset();
-    	clock.start();
-    	
-    	switchTriggered = false;
+    	autonClock = new Timer();
+    	autonClock.reset();
+    	autonClock.start();
     }
     
+    // =======================================================================
     public void autonomousPeriodic()
     { 
     
-    	if (clock.get() < 5.0)	
+    	if (autonClock.get() < 2.0)	
     	{
-    		leftMotor.set(1.0);
-    		rightMotor.set(1.0);
+    		leftMotor.set(0.5);
+            rightMotor.set(0.5);
     	}
-    	else if(clock.get() >= 5.0 && clock.get() < 6.0) 
+    	else
     	{
     		leftMotor.set(0.0);
-    		rightMotor.set(0.0);
-    	}
-    	else if (clock.get() >= 6.0 && clock.get() < 8.0) 
-    	{
-    		leftMotor.set(-0.4);
-    		rightMotor.set(0.25);
-    	}
-    	else if (clock.get() >= 8.0 && switchTriggered == false) 
-    	{
-    		leftMotor.set(-1.0);
-    		rightMotor.set(-1.0);
-    	}
-    	if (clock.get() >= 8.0 && theSwitch.get() == false) 
-    	{
-    		leftMotor.set(0.0);
-    		rightMotor.set(0.0);
-    		switchTriggered = true;
+            rightMotor.set(0.0);
     	}
     	
     }
     
-    //-------------------------------------------------
+    // =======================================================================
     public void teleopPeriodic() 
     {
-    	
-    	updateControls();
-    	
+    	// Get joy stick values (-1 ... 0 ... 1)
+        left  = leftStick.getY();
+        right = rightStick.getY();
+        
         // Set drive motors to current joy stick values
         leftMotor.set(left);
-        rightMotor.set(right);
-        auxMotor.set(aux);
+        rightMotor.set(right);        
         
-        debug.print(0, "Pot: " + pot.getVoltage());
+        // Manage any new control events
+    	updateControls();
+        
+        debug.print(1, "Sonar: " + sonar.getVoltage());
+        
+        cylinder.manageActions();
         //debug.print(1, "PID: " + approachControl.get());
         
     }
     
+    // =======================================================================    
     public void updateControls()
     {
-    	
-    	// Get joy stick values (-1 ... 0 ... 1)
-        left  = leftStick.getY();
-        right = rightStick.getY();
-        aux = (pot.getVoltage()/5);
-    	
-    	
+    	// Bring cylinder in
     	if(leftStick.getRawButton(3)) 
     	{
     		if(cylinder.getStatus() == ActuatorStatus.IN) 
@@ -201,13 +167,24 @@ public class Robot extends IterativeRobot
     			cylinder.goIn();
     		}
     	}
-    	else if(leftStick.getRawButton(11)) {
+    	else if (leftStick.getRawButton(11)) {
     		visionLedRelay.set(Value.kOn);
     	}
-    	else if(leftStick.getRawButton(12)) {
+    	else if (leftStick.getRawButton(12)) {
     		visionLedRelay.set(Value.kOff);
     	}
     	
+    	
+    	/*
+    	else if (rightStick.getRawButton(11)) {
+    		cameraManager.setTarget(1);
+    	}
+    	else if (rightStick.getRawButton(12)) {
+    		cameraManager.setTarget(0);
+    	}    	
+    	 */
+    	
+    	  	
     	/*
     	else if(rightStick.getRawButton(9)) {
     		auxMotor.set(1.0);
