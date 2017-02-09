@@ -6,6 +6,7 @@
 package org.usfirst.frc.team3770.robot;
 
 import org.usfirst.frc.team3770.robot.ActuatorDouble.ActuatorStatus;
+import org.usfirst.frc.team3770.robot.CameraSystem.Mode;
 
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Relay;
@@ -59,8 +60,8 @@ public class Robot extends IterativeRobot
     AnalogInput sonar;                          // Sonar    
     Relay visionLedRelay;                       // Vision light switch
  
-    ActuatorDouble cylinder;                    // Cylinder 1  
-    CameraSystemK cameraManager;                 // Manage cameras - front/back
+    ActuatorDouble cylinder;                    // Cylinder 1                
+    CameraSystem cameraSystem;					// Manage cameras - front/back
     
     // Timer object(s)
     Timer autonClock;
@@ -92,8 +93,7 @@ public class Robot extends IterativeRobot
         sonar = new AnalogInput(SONAR_ANALOG_PORT);
         cylinder = new ActuatorDouble(CYLINDER_IN_PORT, CYLINDER_OUT_PORT, ActuatorStatus.IN);        
         visionLedRelay = new Relay(VISION_LED_RELAY_PORT, Direction.kForward);
-        cameraManager =  new CameraSystemK();
-        
+        cameraSystem = new CameraSystem();
         
        
 
@@ -143,8 +143,10 @@ public class Robot extends IterativeRobot
     	updateControls();
         
         debug.print(1, "Sonar: " + sonar.getVoltage());
+        debug.print(2, "Camera Mode: " + cameraSystem.getCurrentCameraView());
         
         cylinder.manageActions();
+        cameraSystem.update();
         //debug.print(1, "PID: " + approachControl.get());
         
     }
@@ -173,6 +175,12 @@ public class Robot extends IterativeRobot
     	else if (leftStick.getRawButton(12)) {
     		visionLedRelay.set(Value.kOff);
     	}
+    	else if (rightStick.getRawButton(1) && cameraSystem.getCurrentCameraView() == Mode.FRONT) {
+    		cameraSystem.setCamera(Mode.BACK);
+    	}
+    	else if(leftStick.getRawButton(1) && cameraSystem.getCurrentCameraView() == Mode.BACK) {
+			cameraSystem.setCamera(Mode.FRONT);
+		}
     	
     	
     	/*
