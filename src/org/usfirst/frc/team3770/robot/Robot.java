@@ -47,10 +47,10 @@ public class Robot extends IterativeRobot
     private final int LEFT_STICK_USB_PORT    = 1;
     private final int RIGHT_STICK_USB_PORT   = 0;
     
-    private final int Left_Motor_1_ID		 = 
-    private final int Left_Motor_2_ID		 = 
-    private final int Right_Motor_1_ID		 = 
-    private final int Right_Motor_2_ID		 = 
+    private final int Left_Motor_1_ID		 = 7;
+    private final int Left_Motor_2_ID		 = 5;
+    private final int Right_Motor_1_ID		 = 2;
+    private final int Right_Motor_2_ID		 = 4;
     
     private final int VISION_LED_RELAY_PORT  = 0;   
 
@@ -64,6 +64,9 @@ public class Robot extends IterativeRobot
     private final int CLAW_ASSEMBLY_CYLINDER_OUT_PORT = 4;
     
     private final int TRACTION_WHEEL_CYLINDER_IN_PORT = 6;
+    
+    private final int LIFTER_RIGHT_Motor 			  = 8;
+    private final int LIFTER_LEFT_Motor 			  = 3;
     
     
     final int SWITCH_PORT = 0;
@@ -79,7 +82,9 @@ public class Robot extends IterativeRobot
     ActuatorDouble clawAssemblyCylinder;		// Claw Assembly Cylinder
     Solenoid tractionWheel;
     
+    Lifter lifter;
     
+    Compressor compressor;
     
     CameraSystem cameraSystem; 					// Manage cameras - front/back
     
@@ -107,9 +112,12 @@ public class Robot extends IterativeRobot
         // Pneumatics
         clawCylinder = new ActuatorDouble(CLAW_CYLINDER_IN_PORT, CLAW_CYLINDER_OUT_PORT, ActuatorStatus.IN);
         clawAssemblyCylinder = new ActuatorDouble(CLAW_ASSEMBLY_CYLINDER_IN_PORT, CLAW_ASSEMBLY_CYLINDER_OUT_PORT, ActuatorStatus.IN);
-        clawRotateCylinder = new ActuatorDouble(CLAW_ROTATE_CYLINDER_IN_PORT, CLAW_ROTATE_CYLINDER_OUT_PORT, ActuatorStatus.IN);
+        clawRotateCylinder = new ActuatorDouble(CLAW_ROTATE_CYLINDER_IN_PORT, CLAW_ROTATE_CYLINDER_OUT_PORT, ActuatorStatus.OUT);
         tractionWheel = new Solenoid(TRACTION_WHEEL_CYLINDER_IN_PORT);
         
+        lifter = new Lifter(LIFTER_RIGHT_Motor, LIFTER_LEFT_Motor);
+        
+        compressor = new Compressor();
         
         // Initializer various objects
         //sonar = new AnalogInput(SONAR_ANALOG_PORT);
@@ -117,14 +125,11 @@ public class Robot extends IterativeRobot
         //cylinder = new ActuatorDouble(CYLINDER_IN_PORT, CYLINDER_OUT_PORT, ActuatorStatus.IN);
         //distanceTrigger = new DigitalInput(DIGITAL_DISTANC_SENSOR_PORT);
         
-        
-        
-        visionLedRelay = new Relay(VISION_LED_RELAY_PORT, Direction.kForward);
+        visionLedRelay = new Relay(VISION_LED_RELAY_PORT, Direction.kReverse);
         cameraSystem = new CameraSystem();
         
-        
         tractionWheel.set(false);
-
+        compressor.enabled();
         
         // Clear the dashboard
         debug.clearDashboard();
@@ -197,16 +202,16 @@ public class Robot extends IterativeRobot
         
         // Set drive motors to current joy stick values
         drive.driveL(leftStick.getY());
-        drive.driveR(rightStick.getY());        
+        drive.driveR(rightStick.getY());
         
+        double speedControl = SmartDashboard.getNumber("DB/Slider 0");
         
-    	
-    	/*
-        debug.print(1, "Sonar: " + sonar.getVoltage());
-        debug.print(0, "IR Sensor: " + IRSENSOR.getVoltage());
-        debug.print(2, "Digital Sensor: " + distanceTrigger.get());
-        */
-        
+        if(leftStick.getRawButton(2)) {
+        	lifter.setLiftSpeed(speedControl);
+        }
+        else if(!leftStick.getRawButton(2)) {
+        	lifter.setLiftSpeed(0);
+        }
         
         // Manage any new control events
     	updateControls();
@@ -217,23 +222,41 @@ public class Robot extends IterativeRobot
         
         cameraSystem.update();
         //debug.print(1, "PID: " + approachControl.get());
+        debug.print(0, "X: " + leftStick.getX());
+        debug.print(1, "Throttle: " + speedControl);
+        //debug.clearDashboard();
         
         visionLedRelay.set(Value.kOn);
+        //System.out.println("Running: " + System.currentTimeMillis());
         
     }
     
     // =======================================================================    
     public void updateControls()
     {
-    	
-    	
-    	
-    	if (rightStick.getRawButton(11)) {
+    	// Switch Cameras
+    	if (rightStick.getRawButton(10)) {
     		cameraSystem.setCamera(Mode.BACK);
     	}
-    	else if (rightStick.getRawButton(12)) {
+    	else if (rightStick.getRawButton(11)) {
     		cameraSystem.setCamera(Mode.FRONT);
-    	}    	
+    	}
+    	
+    	// Test Pneumatics
+    	else if(rightStick.getRawButton(1)) {
+    		clawCylinder.goOut();
+    	}
+    	else if(!rightStick.getRawButton(1)) {
+    		clawCylinder.goIn();
+    	}
+    	
+    	// Test Traction Pneumatics
+    	else if(leftStick.getRawButton(1)) {
+    		tractionWheel.set(true);
+    	}
+    	else if(!leftStick.getRawButton(1)) {
+    		tractionWheel.set(false);
+    	}
     	
     }
 }
