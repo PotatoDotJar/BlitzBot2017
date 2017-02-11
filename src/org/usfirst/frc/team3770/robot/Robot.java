@@ -6,6 +6,7 @@
 package org.usfirst.frc.team3770.robot;
 
 import org.usfirst.frc.team3770.robot.ActuatorDouble.ActuatorStatus;
+import org.usfirst.frc.team3770.robot.CameraSystem.Mode;
 
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Relay;
@@ -58,12 +59,11 @@ public class Robot extends IterativeRobot
     // Declare objects for mechanical units
     CANTalon leftMotor, rightMotor, auxMotor;   // Motors
     Joystick leftStick, rightStick;             // Joysticks
-    AnalogInput sonar, IRSENSOR;                          
-    DigitalInput distanceTrigger;
+    
     Relay visionLedRelay;                       // Vision light switch
  
     ActuatorDouble cylinder;                    // Cylinder 1  
-//    CameraSystemK cameraManager;                 // Manage cameras - front/back
+    CameraSystem cameraSystem; 					// Manage cameras - front/back
     
     // Timer object(s)
     Timer autonClock;
@@ -76,9 +76,7 @@ public class Robot extends IterativeRobot
     // =======================================================================
     public void robotInit() 
     {
-    	// This statement alone will send one USB camera image to the screen
-        CameraServer.getInstance().startAutomaticCapture();
- 	
+    	
         // Instantiate robot objects by calling constructors
         leftMotor  = new CANTalon(LEFT_CAN_MOTOR_ID);      
         rightMotor = new CANTalon(RIGHT_CAN_MOTOR_ID);
@@ -92,12 +90,12 @@ public class Robot extends IterativeRobot
         rightStick = new Joystick(RIGHT_STICK_USB_PORT);
         
         // Initializer various objects
-        sonar = new AnalogInput(SONAR_ANALOG_PORT);
-        IRSENSOR = new AnalogInput(ANALOG_IR_SENSOR_PORT);
-        cylinder = new ActuatorDouble(CYLINDER_IN_PORT, CYLINDER_OUT_PORT, ActuatorStatus.IN);        
+        //sonar = new AnalogInput(SONAR_ANALOG_PORT);
+        //IRSENSOR = new AnalogInput(ANALOG_IR_SENSOR_PORT);
+        //cylinder = new ActuatorDouble(CYLINDER_IN_PORT, CYLINDER_OUT_PORT, ActuatorStatus.IN);        
         visionLedRelay = new Relay(VISION_LED_RELAY_PORT, Direction.kForward);
-        distanceTrigger = new DigitalInput(DIGITAL_DISTANC_SENSOR_PORT);
-       // cameraManager =  new CameraSystemK();
+        //distanceTrigger = new DigitalInput(DIGITAL_DISTANC_SENSOR_PORT);
+        cameraSystem = new CameraSystem();
         
         
        
@@ -120,11 +118,12 @@ public class Robot extends IterativeRobot
     // =======================================================================
     public void autonomousPeriodic()
     { 
+    /*
     if(distanceTrigger.get()==false)
     {
     	stoppedAtWall = true;
     }
-    /*	if (autonClock.get() < 2.0)	
+    	if (autonClock.get() < 2.0)	
     	{
     		leftMotor.set(0.5);
             rightMotor.set(0.5);
@@ -134,7 +133,7 @@ public class Robot extends IterativeRobot
     		leftMotor.set(0.0);
             rightMotor.set(0.0);
     	}
-    	*/
+    	
     	if(stoppedAtWall==false)
     	{
     
@@ -162,15 +161,17 @@ public class Robot extends IterativeRobot
     		rightMotor.set(0);
     		leftMotor.set(0);
     	}
+    	*/
 }
+    
     
     // =======================================================================
     public void teleopPeriodic() 
     {
     	// Get joy stick values (-1 ... 0 ... 1)
-        left  = leftStick.getY();
-        right = rightStick.getY();
-       // right = IRSENSOR.getVoltage();
+        left  = Math.pow(leftStick.getY(), 2);
+        right = Math.pow(rightStick.getY(), 2);
+        // right = IRSENSOR.getVoltage();
         
         // Set drive motors to current joy stick values
         leftMotor.set(left);
@@ -179,18 +180,26 @@ public class Robot extends IterativeRobot
         // Manage any new control events
     	updateControls();
         
+    	
+    	/*
         debug.print(1, "Sonar: " + sonar.getVoltage());
         debug.print(0, "IR Sensor: " + IRSENSOR.getVoltage());
         debug.print(2, "Digital Sensor: " + distanceTrigger.get());
+        */
+        
         
         cylinder.manageActions();
+        cameraSystem.update();
         //debug.print(1, "PID: " + approachControl.get());
+        
+        visionLedRelay.set(Value.kOn);
         
     }
     
     // =======================================================================    
     public void updateControls()
     {
+    	
     	// Bring cylinder in
     	if(leftStick.getRawButton(3)) 
     	{
@@ -206,34 +215,14 @@ public class Robot extends IterativeRobot
     			cylinder.goIn();
     		}
     	}
-    	else if (leftStick.getRawButton(11)) {
-    		visionLedRelay.set(Value.kOn);
-    	}
-    	else if (leftStick.getRawButton(10)) {
-    		visionLedRelay.set(Value.kOff);
-    	}
     	
-    
-    	/*
+    	
     	else if (rightStick.getRawButton(11)) {
-    		cameraManager.setTarget(1);
+    		cameraSystem.setCamera(Mode.BACK);
     	}
     	else if (rightStick.getRawButton(12)) {
-    		cameraManager.setTarget(0);
+    		cameraSystem.setCamera(Mode.FRONT);
     	}    	
-    	 */
     	
-    	  	
-    	/*
-    	else if(rightStick.getRawButton(9)) {
-    		auxMotor.set(1.0);
-    	}
-    	else if(rightStick.getRawButton(10)) {
-    		auxMotor.set(0.0);
-    	}
-    	else if(theSwitch.get() == false){
-    		auxMotor.set(0.0);
-    	}
-    	*/
     }
 }
