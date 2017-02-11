@@ -6,7 +6,6 @@
 package org.usfirst.frc.team3770.robot;
 
 import org.usfirst.frc.team3770.robot.ActuatorDouble.ActuatorStatus;
-import org.usfirst.frc.team3770.robot.CameraSystem.Mode;
 
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Relay;
@@ -46,8 +45,10 @@ public class Robot extends IterativeRobot
     private final int LEFT_CAN_MOTOR_ID    = 3;
     private final int AUX_CAN_MOTOR_ID	 =   4;
     
-    private final int SONAR_ANALOG_PORT   = 3; 
+    private final int SONAR_ANALOG_PORT   = 2; 
     final int VISION_LED_RELAY_PORT = 0;
+    final int ANALOG_IR_SENSOR_PORT = 3;
+    final int DIGITAL_DISTANC_SENSOR_PORT = 1;
 
     private final int CYLINDER_IN_PORT = 1;
     private final int CYLINDER_OUT_PORT = 0;
@@ -57,11 +58,12 @@ public class Robot extends IterativeRobot
     // Declare objects for mechanical units
     CANTalon leftMotor, rightMotor, auxMotor;   // Motors
     Joystick leftStick, rightStick;             // Joysticks
-    AnalogInput sonar;                          // Sonar    
+    AnalogInput sonar, IRSENSOR;                          
+    DigitalInput distanceTrigger;
     Relay visionLedRelay;                       // Vision light switch
  
-    ActuatorDouble cylinder;                    // Cylinder 1                
-    CameraSystem cameraSystem;					// Manage cameras - front/back
+    ActuatorDouble cylinder;                    // Cylinder 1  
+//    CameraSystemK cameraManager;                 // Manage cameras - front/back
     
     // Timer object(s)
     Timer autonClock;
@@ -70,12 +72,12 @@ public class Robot extends IterativeRobot
     
     // Declare utility variables
     double left,right, aux;
-    
+    boolean stoppedAtWall;
     // =======================================================================
     public void robotInit() 
     {
     	// This statement alone will send one USB camera image to the screen
-     //   CameraServer.getInstance().startAutomaticCapture();
+        CameraServer.getInstance().startAutomaticCapture();
  	
         // Instantiate robot objects by calling constructors
         leftMotor  = new CANTalon(LEFT_CAN_MOTOR_ID);      
@@ -91,9 +93,12 @@ public class Robot extends IterativeRobot
         
         // Initializer various objects
         sonar = new AnalogInput(SONAR_ANALOG_PORT);
+        IRSENSOR = new AnalogInput(ANALOG_IR_SENSOR_PORT);
         cylinder = new ActuatorDouble(CYLINDER_IN_PORT, CYLINDER_OUT_PORT, ActuatorStatus.IN);        
         visionLedRelay = new Relay(VISION_LED_RELAY_PORT, Direction.kForward);
-        cameraSystem = new CameraSystem();
+        distanceTrigger = new DigitalInput(DIGITAL_DISTANC_SENSOR_PORT);
+       // cameraManager =  new CameraSystemK();
+        
         
        
 
@@ -109,13 +114,17 @@ public class Robot extends IterativeRobot
     	autonClock = new Timer();
     	autonClock.reset();
     	autonClock.start();
+    	stoppedAtWall = false;
     }
     
     // =======================================================================
     public void autonomousPeriodic()
     { 
-    
-    	if (autonClock.get() < 2.0)	
+    if(distanceTrigger.get()==false)
+    {
+    	stoppedAtWall = true;
+    }
+    /*	if (autonClock.get() < 2.0)	
     	{
     		leftMotor.set(0.5);
             rightMotor.set(0.5);
@@ -125,8 +134,35 @@ public class Robot extends IterativeRobot
     		leftMotor.set(0.0);
             rightMotor.set(0.0);
     	}
+    	*/
+    	if(stoppedAtWall==false)
+    	{
+    
     	
-    }
+    		 if(IRSENSOR.getVoltage()<=.4)
+	    	{
+	    		rightMotor.set(1);
+	    		leftMotor.set(1);
+	    	}
+	
+	    	else if (IRSENSOR.getVoltage()<=.6)
+	    	{
+	    		rightMotor.set(.75);
+	    		leftMotor.set(.75);
+	    	}
+	
+	    	else if (IRSENSOR.getVoltage()<=1)
+	    	{
+	    		rightMotor.set(.5);
+	    		leftMotor.set(.5);
+	    	}
+    	}
+    	else
+    	{
+    		rightMotor.set(0);
+    		leftMotor.set(0);
+    	}
+}
     
     // =======================================================================
     public void teleopPeriodic() 
@@ -134,6 +170,7 @@ public class Robot extends IterativeRobot
     	// Get joy stick values (-1 ... 0 ... 1)
         left  = leftStick.getY();
         right = rightStick.getY();
+       // right = IRSENSOR.getVoltage();
         
         // Set drive motors to current joy stick values
         leftMotor.set(left);
@@ -143,10 +180,10 @@ public class Robot extends IterativeRobot
     	updateControls();
         
         debug.print(1, "Sonar: " + sonar.getVoltage());
-        debug.print(2, "Camera Mode: " + cameraSystem.getCurrentCameraView());
+        debug.print(0, "IR Sensor: " + IRSENSOR.getVoltage());
+        debug.print(2, "Digital Sensor: " + distanceTrigger.get());
         
         cylinder.manageActions();
-        cameraSystem.update();
         //debug.print(1, "PID: " + approachControl.get());
         
     }
@@ -172,17 +209,11 @@ public class Robot extends IterativeRobot
     	else if (leftStick.getRawButton(11)) {
     		visionLedRelay.set(Value.kOn);
     	}
-    	else if (leftStick.getRawButton(12)) {
+    	else if (leftStick.getRawButton(10)) {
     		visionLedRelay.set(Value.kOff);
     	}
-    	else if (rightStick.getRawButton(1) && cameraSystem.getCurrentCameraView() == Mode.FRONT) {
-    		cameraSystem.setCamera(Mode.BACK);
-    	}
-    	else if(leftStick.getRawButton(1) && cameraSystem.getCurrentCameraView() == Mode.BACK) {
-			cameraSystem.setCamera(Mode.FRONT);
-		}
     	
-    	
+    
     	/*
     	else if (rightStick.getRawButton(11)) {
     		cameraManager.setTarget(1);
