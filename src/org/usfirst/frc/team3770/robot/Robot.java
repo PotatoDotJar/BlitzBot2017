@@ -15,42 +15,22 @@ import edu.wpi.first.wpilibj.Relay.Direction;
 import edu.wpi.first.wpilibj.Relay.Value;
 import edu.wpi.first.wpilibj.Solenoid;
 import edu.wpi.first.wpilibj.Joystick;
-import edu.wpi.first.wpilibj.Talon;
-import edu.wpi.first.wpilibj.TalonSRX;
 import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.AnalogInput;
-import edu.wpi.first.wpilibj.CANSpeedController;
-import edu.wpi.first.wpilibj.CameraServer;
 import edu.wpi.first.wpilibj.Compressor;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.wpilibj.DigitalInput;
-
-import com.ctre.CANTalon;
-
-import edu.wpi.cscore.CvSink;
-import edu.wpi.cscore.CvSource;
-import edu.wpi.cscore.UsbCamera;
-import edu.wpi.first.wpilibj.CameraServer;
-import edu.wpi.first.wpilibj.IterativeRobot;
-
-import javax.xml.ws.handler.MessageContext.Scope;
-
-import org.opencv.core.Mat;
-import org.opencv.core.Point;
-import org.opencv.core.Scalar;
-import org.opencv.imgproc.Imgproc;
 
 // ================================Dev for final Blitzcreek bot=======================================
+
 public class Robot extends IterativeRobot
 {
     // Declare constant values
     private final int LEFT_STICK_USB_PORT    = 1;
     private final int RIGHT_STICK_USB_PORT   = 0;
     
-    private final int Left_Motor_1_ID		 = 7;
-    private final int Left_Motor_2_ID		 = 5;
-    private final int Right_Motor_1_ID		 = 2;
-    private final int Right_Motor_2_ID		 = 4;
+    private final int Left_Motor_1_ID		 = 2;
+    private final int Left_Motor_2_ID		 = 4;
+    private final int Right_Motor_1_ID		 = 7;
+    private final int Right_Motor_2_ID		 = 5;
     
     private final int VISION_LED_RELAY_PORT  = 0;   
 
@@ -100,7 +80,7 @@ public class Robot extends IterativeRobot
     {
     	
         // Instantiate robot objects by calling constructors
-        drive = new DriveSystem(Left_Motor_1_ID, Left_Motor_2_ID, Right_Motor_1_ID, Right_Motor_2_ID, DriveChoices.QUADRATIC);
+        drive = new DriveSystem(Left_Motor_1_ID, Left_Motor_2_ID, Right_Motor_1_ID, Right_Motor_2_ID, DriveChoices.LINEAR);
         
         // Create Debug object
         debug = new Debug();
@@ -112,7 +92,7 @@ public class Robot extends IterativeRobot
         // Pneumatics
         clawCylinder = new ActuatorDouble(CLAW_CYLINDER_IN_PORT, CLAW_CYLINDER_OUT_PORT, ActuatorStatus.IN);
         clawAssemblyCylinder = new ActuatorDouble(CLAW_ASSEMBLY_CYLINDER_IN_PORT, CLAW_ASSEMBLY_CYLINDER_OUT_PORT, ActuatorStatus.IN);
-        clawRotateCylinder = new ActuatorDouble(CLAW_ROTATE_CYLINDER_IN_PORT, CLAW_ROTATE_CYLINDER_OUT_PORT, ActuatorStatus.OUT);
+        clawRotateCylinder = new ActuatorDouble(CLAW_ROTATE_CYLINDER_IN_PORT, CLAW_ROTATE_CYLINDER_OUT_PORT, ActuatorStatus.IN);
         tractionWheel = new Solenoid(TRACTION_WHEEL_CYLINDER_IN_PORT);
         
         lifter = new Lifter(LIFTER_RIGHT_Motor, LIFTER_LEFT_Motor);
@@ -125,7 +105,8 @@ public class Robot extends IterativeRobot
         //cylinder = new ActuatorDouble(CYLINDER_IN_PORT, CYLINDER_OUT_PORT, ActuatorStatus.IN);
         //distanceTrigger = new DigitalInput(DIGITAL_DISTANC_SENSOR_PORT);
         
-        visionLedRelay = new Relay(VISION_LED_RELAY_PORT, Direction.kReverse);
+        visionLedRelay = new Relay(VISION_LED_RELAY_PORT, Direction.kForward);
+        visionLedRelay.set(Value.kOn);
         cameraSystem = new CameraSystem();
         
         tractionWheel.set(false);
@@ -193,40 +174,39 @@ public class Robot extends IterativeRobot
     	}
     	*/
 }
-    
+    double speedControl;
     
     // =======================================================================
     public void teleopPeriodic() 
     {
+    	if(rightStick.getRawButton(1)) {
+    		clawRotateCylinder.goIn();
+    	}
+    	else if(!rightStick.getRawButton(1)) {
+    		clawRotateCylinder.goOut();
+    	}
+    	
         // right = IRSENSOR.getVoltage();
         
         // Set drive motors to current joy stick values
         drive.driveL(leftStick.getY());
         drive.driveR(rightStick.getY());
         
-        double speedControl = SmartDashboard.getNumber("DB/Slider 0");
+        speedControl = SmartDashboard.getNumber("DB/Slider 0");
         
-        if(leftStick.getRawButton(2)) {
-        	lifter.setLiftSpeed(speedControl);
-        }
-        else if(!leftStick.getRawButton(2)) {
-        	lifter.setLiftSpeed(0);
-        }
+        
         
         // Manage any new control events
     	updateControls();
-        
-        clawCylinder.manageActions();
-        clawRotateCylinder.manageActions();
-        clawAssemblyCylinder.manageActions();
-        
         cameraSystem.update();
-        //debug.print(1, "PID: " + approachControl.get());
-        debug.print(0, "X: " + leftStick.getX());
-        debug.print(1, "Throttle: " + speedControl);
-        //debug.clearDashboard();
+        debug.print(0, "Lifter Speed: " + speedControl);
+        debug.print(1, "Claw: " + clawCylinder.getStatusString());
+        debug.print(2, "Claw Rot: " + clawRotateCylinder.getStatusString());
+        debug.print(3, "Claw Assem: " + clawAssemblyCylinder.getStatusString());
+        debug.print(4, "Com A: " + compressor.getCompressorCurrent());
+        debug.print(5, "Climber A: " + (lifter.getLeftCurrent()+lifter.getRightCurrent()));
         
-        visionLedRelay.set(Value.kOn);
+        
         //System.out.println("Running: " + System.currentTimeMillis());
         
     }
@@ -234,6 +214,20 @@ public class Robot extends IterativeRobot
     // =======================================================================    
     public void updateControls()
     {
+    	if(leftStick.getRawButton(8)) {
+        	lifter.setLiftSpeed(speedControl);
+        	if(compressor.getClosedLoopControl()) {
+        		compressor.stop();
+        	}
+        	
+        }
+    	else if(!leftStick.getRawButton(8)) {
+        	lifter.setLiftSpeed(0);
+        	if(!compressor.getClosedLoopControl()) {
+        		compressor.enabled();
+        	}
+        }
+    	/*
     	// Switch Cameras
     	if (rightStick.getRawButton(10)) {
     		cameraSystem.setCamera(Mode.BACK);
@@ -241,17 +235,27 @@ public class Robot extends IterativeRobot
     	else if (rightStick.getRawButton(11)) {
     		cameraSystem.setCamera(Mode.FRONT);
     	}
+    	*/
     	
     	// Test Pneumatics
-    	else if(rightStick.getRawButton(1)) {
+    	if(rightStick.getRawButton(4)) {
     		clawCylinder.goOut();
     	}
-    	else if(!rightStick.getRawButton(1)) {
+    	else if(rightStick.getRawButton(5)) {
     		clawCylinder.goIn();
     	}
     	
+    	
+    	
+    	if(rightStick.getRawButton(3)) {
+    		clawAssemblyCylinder.goOut();
+    	}
+    	else if(rightStick.getRawButton(2)) {
+    		clawAssemblyCylinder.goIn();
+    	}
+    	
     	// Test Traction Pneumatics
-    	else if(leftStick.getRawButton(1)) {
+    	if(leftStick.getRawButton(1)) {
     		tractionWheel.set(true);
     	}
     	else if(!leftStick.getRawButton(1)) {

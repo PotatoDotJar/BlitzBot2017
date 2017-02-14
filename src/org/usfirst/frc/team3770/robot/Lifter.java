@@ -23,5 +23,13 @@ public class Lifter {
 		//}
 	}
 	
+	public double getRightCurrent() {
+		return rightMotor.getOutputCurrent();
+	}
+	
+	public double getLeftCurrent() {
+		return leftMotor.getOutputCurrent();
+	}
+	
 	
 }

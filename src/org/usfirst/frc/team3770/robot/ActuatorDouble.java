@@ -11,13 +11,10 @@ import edu.wpi.first.wpilibj.Timer;
 
 public class ActuatorDouble 
 {
-	public enum ActuatorStatus {IN,OUT};
-	public final double solenoidTimer = 0.1;   // Seconds to open valves    
+	public enum ActuatorStatus {IN,OUT}; 
 	
     DoubleSolenoid controlSolenoid;
     
-    Timer actuatorDelay;
-    boolean actuatorMoving; 
     ActuatorStatus status;
     String statusString;
     int inPort;
@@ -25,16 +22,12 @@ public class ActuatorDouble
 
 	// --------------------------------------------------------------------------------------
     // Default constructor
-    public ActuatorDouble(int in, int out, ActuatorStatus initStatus) 
+    public ActuatorDouble(int inPort, int outPort, ActuatorStatus initStatus) 
     {
-    	inPort  = in;
-    	outPort = out;
+    	this.inPort  = inPort;
+    	this.outPort = outPort;
     	controlSolenoid = new DoubleSolenoid(inPort,outPort);
     	statusString = new String();
-    	
-    	
-        actuatorDelay = new Timer();
-        actuatorDelay.reset();
         status = initStatus;
         
         if(status == ActuatorStatus.IN) {
@@ -48,8 +41,6 @@ public class ActuatorDouble
     public void goOut()
     {
     	controlSolenoid.set(DoubleSolenoid.Value.kForward);
-    	actuatorDelay.start();
-    	actuatorMoving = true;
         status = ActuatorStatus.OUT;
     }
 
@@ -57,11 +48,9 @@ public class ActuatorDouble
     public void goIn()
     {
     	controlSolenoid.set(DoubleSolenoid.Value.kReverse);
-     	actuatorDelay.start();
-    	actuatorMoving = true;
         status = ActuatorStatus.IN;
     }
-   
+    /*
     // Manage actuators in motion.  Shut down with time expires.
     public void manageActions()
     {
@@ -73,7 +62,7 @@ public class ActuatorDouble
         	actuatorDelay.reset();
         }        
     }
-    
+    */
     public ActuatorStatus getStatus()
     {
     	 return status;

@@ -10,7 +10,7 @@ public class Debug {
 
     // A shorter print function for the DriveStation.
     public void print(int index, String line) {
-    	clearDashboard();
+    	//clearDashboard();
     	SmartDashboard.putString("DB/String " + index, line);
     }
     // Clears the SmartDashboard
