@@ -20,6 +20,8 @@ public class DriveSystem
     CANTalon leftDriveTalon2;
  	
     DriveChoices driveChoice;
+    
+    boolean reversedDrive;
 
     final double ROTATION_FACTOR = 0.5;
 
@@ -30,20 +32,46 @@ public class DriveSystem
         leftDriveTalon1  = new CANTalon(leftID1);
         leftDriveTalon2  = new CANTalon(leftID2);
         driveChoice = currDrive;
+        
+        reversedDrive = false;
     }
 	
  	// Manage left drive wheels
+    // Reversed drive allows backwards driving from a forward reference.
  	public void driveL(double inputL)
 	{
-    	leftDriveTalon1.set(driveCalc(-inputL));
-    	leftDriveTalon2.set(driveCalc(-inputL));
-	}
+ 		if(reversedDrive == false)
+ 		{
+ 			leftDriveTalon1.set(driveCalc(-inputL));
+ 			leftDriveTalon2.set(driveCalc(-inputL));
+ 		}
+ 		else
+ 		{
+ 			rightDriveTalon1.set(driveCalc(-inputL));
+ 			rightDriveTalon2.set(driveCalc(-inputL));
+ 		}
+ 	}
 	
  	// Manage right drive wheels
+    // Reversed drive allows backwards driving from a forward reference.
 	public void driveR(double inputR)
 	{
-    	rightDriveTalon1.set(driveCalc(inputR));
-    	rightDriveTalon2.set(driveCalc(inputR));
+ 		if(reversedDrive == false)
+ 		{
+ 			rightDriveTalon1.set(driveCalc(inputR));
+ 			rightDriveTalon2.set(driveCalc(inputR));
+ 		}
+ 		else
+ 		{
+ 			leftDriveTalon1.set(driveCalc(inputR));
+ 			leftDriveTalon2.set(driveCalc(inputR));
+ 		}
+	}
+	
+	// Manage reverse drive
+	public void setReversed(boolean r)
+	{
+		reversedDrive = r;
 	}
 	
     // ----------------------------------------------------------------------------
@@ -53,7 +81,7 @@ public class DriveSystem
 	{		
 		double output = 0.0;
 		
-		if (driveChoice == DriveChoices.QUADRATIC)
+        if (driveChoice == DriveChoices.QUADRATIC)
 		{
 		    if(input < 0) {
 			    output = -input * input;   
@@ -62,10 +90,11 @@ public class DriveSystem
 			    output = input * input;
 		    }
 		}
-		if (driveChoice == DriveChoices.LINEAR)
+		else if (driveChoice == DriveChoices.LINEAR)
 		{
 			output = input;
 		}
+		
 		
         return output;
 	}

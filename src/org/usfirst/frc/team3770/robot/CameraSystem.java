@@ -19,7 +19,7 @@ public class CameraSystem {
 	}
 	
 	private int frontCameraID = 0;
-	private int backCameraID = 1;
+	private int backCameraID = 2;
 	
 	
 	Mode currentMode = Mode.FRONT;
@@ -42,8 +42,8 @@ public class CameraSystem {
     	backCamera.setResolution(160, 120);
     	
     	cvSink1 = CameraServer.getInstance().getVideo(frontCamera.getName());
-    	cvSink2 = CameraServer.getInstance().getVideo(frontCamera.getName());
-        outputStream = CameraServer.getInstance().putVideo("Blur", 160, 120);
+    	cvSink2 = CameraServer.getInstance().getVideo(backCamera.getName());
+        outputStream = CameraServer.getInstance().putVideo("Cameras", 160, 120);
         
         source = new Mat();
         //Mat output = new Mat();
