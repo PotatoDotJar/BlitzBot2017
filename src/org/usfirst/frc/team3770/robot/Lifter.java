@@ -11,16 +11,13 @@ public class Lifter {
 		rightMotor = new CANTalon(rightMotorID);
 		leftMotor = new CANTalon(leftMotorID);
 		
-		
 	}
 	
 	public void setLiftSpeed(double speed) {
 		double converted = -speed;
 		
-		//if(converted < 0) {
-			rightMotor.set(converted);
-			leftMotor.set(converted * -1);
-		//}
+		rightMotor.set(converted);
+		leftMotor.set(converted * -1);
 	}
 	
 	public double getRightCurrent() {

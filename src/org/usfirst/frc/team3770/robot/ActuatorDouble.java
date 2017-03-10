@@ -7,7 +7,6 @@
 package org.usfirst.frc.team3770.robot;
 
 import edu.wpi.first.wpilibj.DoubleSolenoid;
-import edu.wpi.first.wpilibj.Timer;
 
 public class ActuatorDouble 
 {
